@@ -1,0 +1,20 @@
+# permissions for end users to view clusters.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cluster-viewer-role
+rules:
+- apiGroups:
+  - ethereum.applying.cool
+  resources:
+  - clusters
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ethereum.applying.cool
+  resources:
+  - clusters/status
+  verbs:
+  - get

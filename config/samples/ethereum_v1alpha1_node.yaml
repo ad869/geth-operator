@@ -1,0 +1,42 @@
+apiVersion: ethereum.applying.cool/v1alpha1
+kind: Node
+metadata:
+  name: node-sample
+spec:
+  image: quorumengineering/quorum:22.4.2
+  resources:
+    cpu: "1"
+    cpuLimit: "1"
+    memory: 1Gi
+    memoryLimit: 1Gi
+    storage: 1Gi
+    storageClass: standard
+  genesis:
+    networkId: 1337
+    chainId: 1337
+    qbft:
+      validators:
+        - "0x8be3e1982e23f68d339cb551ade5b79f3dbdf648"
+        - "0x6e679cd21fe7d53b77ca284ecec7dac0f4ce78f6"
+        - "0x87864116c19de41f813709fcf159853fcc64496e"
+        - "0x8f5c7b47ea58387b7f593a10e760884cdbe56adf"
+      epochlength: 30000
+      blockperiodseconds: 1
+      requesttimeoutseconds: 10
+  miner: true
+  import:
+    privateKeySecretName: geth-ibft2-account-key
+    passwordSecretName: geth-ibft2-account-password
+  coinbase: "0xc1381ED43B327e3C7A1ADb21285f1e9cB82Bc00d"
+  p2pPort: 30303
+  rpcPort: 8545
+  wsPort: 8546
+  graphqlPort: 8547
+  rlpxPort: 30303
+  metricsPort: 9545
+
+  staticNodes:
+    - "enode://245747725d07d658e57920f70af6433750e4e366c0e6afc66df69dc9631233ef1ba3af2cd8b103a23b78379c9cd6f2500e37600663b998ec637c034f40d43f17@<HOST>:30303?discport=0&raftport=53000"
+    - "enode://ae968353135a08a39bcf5f71ceda6104465bd3e458a21ebfe0a3ee45e5a9891f14e854b471e3e6e29c479557cb7fff9386595a6bf50a88eb578b46d268f0bfcd@<HOST>:30303?discport=0&raftport=53000"
+    - "enode://4e3c3556aa43410e6c9730714a40a317c33cfc90fc48c99d4a7d37ebe02a2c71c71c7795099b068ee1735c216b86219832542dc23be4ab33516ec89d035996a8@<HOST>:30303?discport=0&raftport=53000"
+    - "enode://22e34d9c1c993640e9bc1f9f90e74bf5966c9949a02bc6b5fb1c186e4f6badecaa449ec0cb6a9f3b286fc8cb325c85108640676e67285e8ab74b63ba56b17a14@<HOST>:30303?discport=0&raftport=53000"

@@ -1,0 +1,25 @@
+domain: applying.cool
+layout:
+- go.kubebuilder.io/v3
+projectName: geth-operator
+repo: github.com/ad869/geth-operator
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: applying.cool
+  group: ethereum
+  kind: Node
+  path: github.com/ad869/geth-operator/api/v1alpha1
+  version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: applying.cool
+  group: ethereum
+  kind: Cluster
+  path: github.com/ad869/geth-operator/api/v1alpha1
+  version: v1alpha1
+version: "3"

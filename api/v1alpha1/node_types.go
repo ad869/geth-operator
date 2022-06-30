@@ -28,8 +28,6 @@ type Enode string
 
 // NodeSpec defines the desired state of Node
 type NodeSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
 
 	// Image is Ethereum node client image
 	Image string `json:"image,omitempty"`
@@ -55,6 +53,9 @@ type NodeSpec struct {
 
 	// Coinbase is the account to which mining rewards are paid
 	Coinbase EthereumAddress `json:"coinbase,omitempty"`
+
+	// Logging verbosity: 0=silent, 1=error, 2=warn, 3=info, 4=debug, 5=detail (default: 3)
+	Verbosity uint `json:"verbosity,omitempty"`
 
 	// P2PPort is port used for peer to peer communication
 	P2PPort uint `json:"p2pPort,omitempty"`

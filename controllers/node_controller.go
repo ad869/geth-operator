@@ -152,31 +152,42 @@ func (r *NodeReconciler) reconcileStatefulSet(ctx reconcileNodeRequestContext) (
 						Name:  "CONFIG_PATH",
 						Value: client.PathConfig(),
 					},
+					{
+						Name:  "SECRETS_PATH",
+						Value: client.PathSecrets(),
+					},
 				},
 				Command:      []string{"/bin/sh"},
 				Args:         []string{fmt.Sprintf("%s/geth-init.sh", client.PathConfig())},
 				VolumeMounts: volumeMounts,
 			},
-				{
-					Name:  "import-account",
-					Image: ctx.node.Spec.Image,
-					Env: []corev1.EnvVar{
-						{
-							Name:  "DATA_PATH",
-							Value: client.PathData(),
-						},
-						{
-							Name:  "SECRETS_PATH",
-							Value: client.PathSecrets(),
-						},
-					},
-					Command:      []string{"/bin/sh"},
-					Args:         []string{fmt.Sprintf("%s/import-account.sh", client.PathConfig())},
-					VolumeMounts: volumeMounts,
-				}},
+			// {
+			// 	Name:  "import-account",
+			// 	Image: ctx.node.Spec.Image,
+			// 	Env: []corev1.EnvVar{
+			// 		{
+			// 			Name:  "DATA_PATH",
+			// 			Value: client.PathData(),
+			// 		},
+			// 		{
+			// 			Name:  "SECRETS_PATH",
+			// 			Value: client.PathSecrets(),
+			// 		},
+			// 	},
+			// 	Command:      []string{"/bin/sh"},
+			// 	Args:         []string{fmt.Sprintf("%s/import-account.sh", client.PathConfig())},
+			// 	VolumeMounts: volumeMounts,
+			// }
+			},
 			Containers: []corev1.Container{{
 				Name:  "node",
 				Image: ctx.node.Spec.Image,
+				Env: []corev1.EnvVar{
+					{
+						Name:  "PRIVATE_CONFIG",
+						Value: "ignore",
+					},
+				},
 				// Command: []string{"/bin/sh", "-c", "sleep 3600"},
 				Args: client.Args(),
 				Resources: corev1.ResourceRequirements{

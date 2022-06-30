@@ -11,7 +11,7 @@ import (
 
 const (
 	GoQuorumHomeDir      = "/data/quorum"
-	GoQuorumDefaultImage = "quorumengineering/quorum:22.4.2"
+	GoQuorumDefaultImage = "quorumengineering/quorum:22.4.4"
 )
 
 type GoQuorum struct {
@@ -32,7 +32,7 @@ func (g *GoQuorum) Genesis() (content string, err error) {
 	}
 
 	// extraData is a RLP encoded string containing the validators address.
-	extraData, err := createExtraDataFromValidators(genesis.QBFT.Validators)
+	extraData, err := createExtraDataFromValidators(genesis.Istanbul.Validators)
 	if err != nil {
 		return
 	}
@@ -49,15 +49,16 @@ func (g *GoQuorum) Genesis() (content string, err error) {
 		"parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
 		"extraData":  extraData,
 		"config": map[string]interface{}{
-			"isQuorum":            true,
-			"chainId":             genesis.ChainID,
-			"homesteadBlock":      0,
-			"eip150Block":         0,
-			"eip150Hash":          "0x0000000000000000000000000000000000000000000000000000000000000000",
-			"eip155Block":         0,
-			"eip158Block":         0,
-			"byzantiumBlock":      0,
-			"constantinopleBlock": 0,
+			"isQuorum":               true,
+			"chainId":                genesis.ChainID,
+			"homesteadBlock":         0,
+			"eip150Block":            0,
+			"eip150Hash":             "0x0000000000000000000000000000000000000000000000000000000000000000",
+			"eip155Block":            0,
+			"eip158Block":            0,
+			"byzantiumBlock":         0,
+			"constantinopleBlock":    0,
+			"constantinopleFixBlock": 0,
 			"transitions": []map[string]interface{}{
 				{
 					"contractsizelimit": 64,
@@ -65,11 +66,11 @@ func (g *GoQuorum) Genesis() (content string, err error) {
 				},
 			},
 			"txnSizeLimit": 64,
-			"qbft": map[string]interface{}{
-				"blockperiodseconds":    genesis.QBFT.BlockPeriodSeconds,
-				"epochlength":           genesis.QBFT.EpochLength,
-				"requesttimeoutseconds": genesis.QBFT.RequestTimeoutSeconds,
-				"policy":                0,
+			"istanbul": map[string]interface{}{
+				"ceil2Nby3Block": genesis.Istanbul.Ceil2Nby3Block,
+				"epoch":          genesis.Istanbul.Epoch,
+				"policy":         genesis.Istanbul.Policy,
+				"testQBFTBlock":  genesis.Istanbul.TestQBFTBlock,
 			},
 		},
 		"alloc": alloc,
@@ -99,8 +100,13 @@ func (g *GoQuorum) EncodeStaticNodes() string {
 func (g *GoQuorum) Args() (args []string) {
 
 	args = append(args, "--datadir", g.PathData())
-	args = append(args, "--ipcdisable")
 	args = append(args, "--nodiscover")
+	args = append(args, "--ipcdisable")
+	args = append(args, "--verbosity", fmt.Sprintf("%d", g.node.Spec.Verbosity))
+	args = append(args, "--syncmode", "full")
+	args = append(args, "--nousb")
+	args = append(args, "--metrics")
+
 	args = append(args, "--emitcheckpoints")
 	args = append(args, "--networkid", fmt.Sprintf("%d", g.node.Spec.Genesis.NetworkID))
 	args = append(args, "--port", fmt.Sprintf("%d", g.node.Spec.P2PPort))

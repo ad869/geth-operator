@@ -20,13 +20,32 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+type NodeType uint
+
+const (
+	NodeTypeValidator NodeType = 0
+	NodeTypeMember    NodeType = 1
+)
+
 // ClusterSpec defines the desired state of Cluster
 type ClusterSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
 
-	// Foo is an example field of Cluster. Edit cluster_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	// Genesis is genesis block configuration
+	Genesis *Genesis `json:"genesis"`
+
+	// validator is validators of qbft consensus.
+	Validator Template `json:"validator"`
+
+	// member is static nodes.
+	Member Template `json:"member"`
+
+	// used to derive ethereum account.
+	Mnemonic string `json:"mnemonic"`
+}
+
+type Template struct {
+	Number int      `json:"number"`
+	Spec   NodeSpec `json:"spec"`
 }
 
 // ClusterStatus defines the observed state of Cluster

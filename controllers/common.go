@@ -12,6 +12,19 @@ const (
 	FinalizerNode corev1.FinalizerName = "geth-operator-node"
 )
 
+const (
+	// used to name validator node resources.
+	NameFormatValidator = `%s-validator-%d`
+
+	// used to name member node resources.
+	NameFormatMember = `%s-member-%d`
+
+	// https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#account
+	// used to generate ethereum account
+	AccountIndexPrefixValidator = `1%d`
+	AccountIndexPrefixMember    = `2%d`
+)
+
 // RequeueIfError requeues if an error is found.
 func RequeueIfError(err error) (ctrl.Result, error) {
 	return ctrl.Result{}, err

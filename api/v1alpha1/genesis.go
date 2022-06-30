@@ -12,7 +12,19 @@ type Genesis struct {
 	// more details https://github.com/ethereum/EIPs/blob/master/EIPS/eip-155.md
 	ChainID uint `json:"chainId"`
 
-	QBFT QBFT `json:"qbft,omitempty"`
+	// QBFT QBFT `json:"qbft,omitempty"`
+
+	Istanbul Istanbul `json:"istanbul,omitempty"`
+}
+
+type Istanbul struct {
+	// +kubebuilder:validation:MinItems=1
+	Validators []EthereumAddress `json:"validators,omitempty"`
+
+	Ceil2Nby3Block uint64 `json:"ceil2Nby3Block,omitempty"`
+	Epoch          uint64 `json:"epoch,omitempty"`
+	Policy         uint64 `json:"policy,omitempty"`
+	TestQBFTBlock  uint64 `json:"testQBFTBlock,omitempty"`
 }
 
 // https://consensys.net/docs/goquorum//en/latest/configure-and-manage/configure/consensus-protocols/qbft/

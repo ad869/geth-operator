@@ -7,11 +7,10 @@ spec:
   genesis:
     networkId: 1337
     chainId: 1337
-    istanbul:
-      ceil2Nby3Block: 0
-      epoch: 30000
-      policy: 0
-      testQBFTBlock: 0
+    qbft:
+      epochlength: 30000
+      blockperiodseconds: 1
+      requesttimeoutseconds: 10
 
   validator:
     number: 4

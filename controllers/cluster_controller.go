@@ -108,7 +108,7 @@ func (r *ClusterReconciler) reconcileNode(ctx reconcileClusterRequestContext) (e
 			},
 			Spec: ethereumv1alpha1.NodeSpec{
 				Genesis: &ethereumv1alpha1.Genesis{
-					Istanbul: ethereumv1alpha1.Istanbul{
+					QBFT: ethereumv1alpha1.QBFT{
 						Validators: []ethereumv1alpha1.EthereumAddress{},
 					},
 				},
@@ -135,7 +135,7 @@ func (r *ClusterReconciler) reconcileNode(ctx reconcileClusterRequestContext) (e
 
 			node.Spec.StaticNodes = staticNodes
 
-			node.Spec.Genesis.Istanbul.Validators = validators
+			node.Spec.Genesis.QBFT.Validators = validators
 
 			node.Spec.Coinbase = ethereumv1alpha1.EthereumAddress(address)
 
@@ -173,7 +173,7 @@ func (r *ClusterReconciler) reconcileNode(ctx reconcileClusterRequestContext) (e
 
 			node.Spec.StaticNodes = staticNodes
 
-			node.Spec.Genesis.Istanbul.Validators = validators
+			node.Spec.Genesis.QBFT.Validators = validators
 
 			node.Spec.Coinbase = ethereumv1alpha1.EthereumAddress(address)
 

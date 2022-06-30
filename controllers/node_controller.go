@@ -79,7 +79,6 @@ func (r *NodeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 	shared.UpdateLabels(_ctx.node, "quorum")
 
-	_ctx.log.Info("start reconcile")
 	return r.reconcileNode(_ctx)
 }
 
@@ -140,54 +139,28 @@ func (r *NodeReconciler) reconcileStatefulSet(ctx reconcileNodeRequestContext) (
 		sts.Spec.Template.ObjectMeta.Labels = labels
 		sts.Spec.Template.Spec = corev1.PodSpec{
 			Volumes: r.createNodeVolumes(ctx),
-			InitContainers: []corev1.Container{{
-				Name:  "init-geth",
-				Image: ctx.node.Spec.Image,
-				Env: []corev1.EnvVar{
-					{
-						Name:  "DATA_PATH",
-						Value: client.PathData(),
-					},
-					{
-						Name:  "CONFIG_PATH",
-						Value: client.PathConfig(),
-					},
-					{
-						Name:  "SECRETS_PATH",
-						Value: client.PathSecrets(),
-					},
+			InitContainers: []corev1.Container{
+				{
+					Name:         "init",
+					Image:        ctx.node.Spec.Image,
+					Env:          client.ENV(),
+					Command:      []string{"/bin/sh"},
+					Args:         []string{fmt.Sprintf("%s/geth-init.sh", client.PathConfig())},
+					VolumeMounts: volumeMounts,
 				},
-				Command:      []string{"/bin/sh"},
-				Args:         []string{fmt.Sprintf("%s/geth-init.sh", client.PathConfig())},
-				VolumeMounts: volumeMounts,
-			},
-			// {
-			// 	Name:  "import-account",
-			// 	Image: ctx.node.Spec.Image,
-			// 	Env: []corev1.EnvVar{
-			// 		{
-			// 			Name:  "DATA_PATH",
-			// 			Value: client.PathData(),
-			// 		},
-			// 		{
-			// 			Name:  "SECRETS_PATH",
-			// 			Value: client.PathSecrets(),
-			// 		},
-			// 	},
-			// 	Command:      []string{"/bin/sh"},
-			// 	Args:         []string{fmt.Sprintf("%s/import-account.sh", client.PathConfig())},
-			// 	VolumeMounts: volumeMounts,
-			// }
+				{
+					Name:         "import-account",
+					Image:        ctx.node.Spec.Image,
+					Env:          client.ENV(),
+					Command:      []string{"/bin/sh"},
+					Args:         []string{fmt.Sprintf("%s/import-account.sh", client.PathConfig())},
+					VolumeMounts: volumeMounts,
+				},
 			},
 			Containers: []corev1.Container{{
 				Name:  "node",
 				Image: ctx.node.Spec.Image,
-				Env: []corev1.EnvVar{
-					{
-						Name:  "PRIVATE_CONFIG",
-						Value: "ignore",
-					},
-				},
+				Env:   client.ENV(),
 				// Command: []string{"/bin/sh", "-c", "sleep 3600"},
 				Args: client.Args(),
 				Resources: corev1.ResourceRequirements{

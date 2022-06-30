@@ -12,9 +12,9 @@ type Genesis struct {
 	// more details https://github.com/ethereum/EIPs/blob/master/EIPS/eip-155.md
 	ChainID uint `json:"chainId"`
 
-	// QBFT QBFT `json:"qbft,omitempty"`
+	QBFT QBFT `json:"qbft,omitempty"`
 
-	Istanbul Istanbul `json:"istanbul,omitempty"`
+	// Istanbul Istanbul `json:"istanbul,omitempty"`
 }
 
 type Istanbul struct {

@@ -7,6 +7,7 @@ import (
 	"github.com/ad869/geth-operator/api/v1alpha1"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/rlp"
+	corev1 "k8s.io/api/core/v1"
 )
 
 const (
@@ -32,7 +33,7 @@ func (g *GoQuorum) Genesis() (content string, err error) {
 	}
 
 	// extraData is a RLP encoded string containing the validators address.
-	extraData, err := createExtraDataFromValidators(genesis.Istanbul.Validators)
+	extraData, err := createExtraDataFromValidators(genesis.QBFT.Validators)
 	if err != nil {
 		return
 	}
@@ -66,11 +67,11 @@ func (g *GoQuorum) Genesis() (content string, err error) {
 				},
 			},
 			"txnSizeLimit": 64,
-			"istanbul": map[string]interface{}{
-				"ceil2Nby3Block": genesis.Istanbul.Ceil2Nby3Block,
-				"epoch":          genesis.Istanbul.Epoch,
-				"policy":         genesis.Istanbul.Policy,
-				"testQBFTBlock":  genesis.Istanbul.TestQBFTBlock,
+			"qbft": map[string]interface{}{
+				"blockperiodseconds":    genesis.QBFT.BlockPeriodSeconds,
+				"epochlength":           genesis.QBFT.EpochLength,
+				"requesttimeoutseconds": genesis.QBFT.RequestTimeoutSeconds,
+				"policy":                0,
 			},
 		},
 		"alloc": alloc,
@@ -104,7 +105,6 @@ func (g *GoQuorum) Args() (args []string) {
 	args = append(args, "--ipcdisable")
 	args = append(args, "--verbosity", fmt.Sprintf("%d", g.node.Spec.Verbosity))
 	args = append(args, "--syncmode", "full")
-	args = append(args, "--nousb")
 	args = append(args, "--metrics")
 
 	args = append(args, "--emitcheckpoints")
@@ -117,7 +117,7 @@ func (g *GoQuorum) Args() (args []string) {
 	args = append(args, "--http.port", fmt.Sprintf("%d", g.node.Spec.RPCPort))
 	args = append(args, "--http.corsdomain", "*")
 	args = append(args, "--http.vhosts", "*")
-	args = append(args, "--http.api", "admin,db,eth,debug,miner,net,shh,txpool,personal,web3,quorum,istanbul")
+	args = append(args, "--http.api", "admin,eth,debug,miner,net,txpool,personal,web3,istanbul")
 
 	if g.node.Spec.Miner {
 		args = append(args, "--mine")
@@ -148,6 +148,29 @@ func (g GoQuorum) PathSecrets() string {
 // PathConfig returns configuration directory
 func (g GoQuorum) PathConfig() string {
 	return fmt.Sprintf("%s/%s", GoQuorumHomeDir, "config")
+}
+
+func (g GoQuorum) ENV() (envs []corev1.EnvVar) {
+
+	envs = []corev1.EnvVar{
+		{
+			Name:  "DATA_PATH",
+			Value: g.PathData(),
+		},
+		{
+			Name:  "CONFIG_PATH",
+			Value: g.PathConfig(),
+		},
+		{
+			Name:  "SECRETS_PATH",
+			Value: g.PathSecrets(),
+		},
+		{
+			Name:  "PRIVATE_CONFIG",
+			Value: "ignore",
+		},
+	}
+	return
 }
 
 func createExtraDataFromValidators(validators []v1alpha1.EthereumAddress) (string, error) {

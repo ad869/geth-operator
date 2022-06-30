@@ -1,6 +1,9 @@
 package ethereum
 
-import "github.com/ad869/geth-operator/api/v1alpha1"
+import (
+	"github.com/ad869/geth-operator/api/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
+)
 
 // Ethereum compatible client
 type Client interface {
@@ -27,6 +30,8 @@ type ConfAndExec interface {
 
 	// Refer docker image
 	Image() string
+
+	ENV() []corev1.EnvVar
 }
 
 func NewClient(node v1alpha1.Node) Client {

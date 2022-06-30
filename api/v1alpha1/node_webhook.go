@@ -81,16 +81,16 @@ func (r *Node) DefaultNodeResources() {
 		r.Spec.Resources.CPU = DefaultNodeCPURequest
 	}
 	if r.Spec.Resources.CPULimit == "" {
-		r.Spec.Resources.CPU = DefaultNodeCPULimit
+		r.Spec.Resources.CPULimit = DefaultNodeCPULimit
 	}
 	if r.Spec.Resources.Memory == "" {
-		r.Spec.Resources.CPU = DefaultkNodeMemoryRequest
+		r.Spec.Resources.Memory = DefaultkNodeMemoryRequest
 	}
 	if r.Spec.Resources.MemoryLimit == "" {
-		r.Spec.Resources.CPU = DefaultNodeMemoryLimit
+		r.Spec.Resources.MemoryLimit = DefaultNodeMemoryLimit
 	}
 	if r.Spec.Resources.Storage == "" {
-		r.Spec.Resources.CPU = DefaultNodeStorageRequest
+		r.Spec.Resources.Storage = DefaultNodeStorageRequest
 	}
 }
 

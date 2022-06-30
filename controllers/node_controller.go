@@ -77,6 +77,8 @@ func (r *NodeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		return RequeueIfError(client.IgnoreNotFound(err))
 	}
 
+	_ctx.node.Default()
+
 	shared.UpdateLabels(_ctx.node, "quorum")
 
 	return r.reconcileNode(_ctx)

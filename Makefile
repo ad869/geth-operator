@@ -66,7 +66,7 @@ build: generate fmt vet ## Build manager binary.
 	go build -o bin/manager main.go
 
 .PHONY: run
-run: manifests generate fmt vet ## Run a controller from your host.
+run: manifests generate fmt vet install ## Run a controller from your host.
 	go run ./main.go
 
 .PHONY: docker-build
@@ -99,6 +99,14 @@ deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in
 .PHONY: undeploy
 undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
 	$(KUSTOMIZE) build config/default | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
+
+.PHONY: local
+local: 
+	kubectl apply -f config/samples/ethereum_v1alpha1_cluster.yaml 
+
+.PHONY: unlocal
+unlocal: 
+	kubectl delete -f config/samples/ethereum_v1alpha1_cluster.yaml 
 
 ##@ Build Dependencies
 

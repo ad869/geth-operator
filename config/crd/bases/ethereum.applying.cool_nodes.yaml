@@ -54,7 +54,6 @@ spec:
                           type: string
                         balance:
                           description: Balance is account balance in wei
-                          pattern: ^0[xX][0-9a-fA-F]+$
                           type: string
                       required:
                       - address

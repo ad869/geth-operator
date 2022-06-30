@@ -1,39 +1,24 @@
 apiVersion: ethereum.applying.cool/v1alpha1
 kind: Cluster
 metadata:
-  name: cluster-sample
+  name: apple
 spec:
   mnemonic: "tag volcano eight thank tide danger coast health above argue embrace heavy"
+  image: quorumengineering/quorum:22.4.2
   genesis:
     networkId: 1337
     chainId: 1337
     qbft:
       epochlength: 30000
-      blockperiodseconds: 1
+      blockperiodseconds: 5
       requesttimeoutseconds: 10
-
   validator:
     number: 4
-    spec:
-      image: quorumengineering/quorum:22.4.2
-      resources:
-        cpu: "0.2"
-        cpuLimit: "0.5"
-        memory: 0.2Gi
-        memoryLimit: 0.5Gi
-        storage: 0.2Gi
-        storageClass: standard
-      miner: true
-
-  member:
-    number: 0
-    spec:
-      image: quorumengineering/quorum:22.4.2
-      resources:
-        cpu: "1"
-        cpuLimit: "1"
-        memory: 1Gi
-        memoryLimit: 1Gi
-        storage: 1Gi
-        storageClass: standard
-      miner: false
+    verbosity: 5
+    resources:
+      cpu: "0.2"
+      cpuLimit: "0.5"
+      memory: 0.2Gi
+      memoryLimit: 0.5Gi
+      storage: 0.4Gi
+      storageClass: standard

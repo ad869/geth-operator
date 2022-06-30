@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"github.com/ad869/geth-operator/api/shared"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -30,28 +31,38 @@ const (
 // ClusterSpec defines the desired state of Cluster
 type ClusterSpec struct {
 
+	// Image is Ethereum node client image
+	Image string `json:"image,omitempty"`
+
+	// used to derive ethereum account.
+	Mnemonic string `json:"mnemonic"`
+
 	// Genesis is genesis block configuration
 	Genesis *Genesis `json:"genesis"`
 
 	// validator is validators of qbft consensus.
-	Validator Template `json:"validator"`
+	Validator NodeTemplate `json:"validator,omitempty"`
 
 	// member is static nodes.
-	Member Template `json:"member"`
+	Member NodeTemplate `json:"member,omitempty"`
 
-	// used to derive ethereum account.
-	Mnemonic string `json:"mnemonic"`
+	// node ports
+	Ports `json:"ports,omitempty"`
 }
 
-type Template struct {
-	Number int      `json:"number"`
-	Spec   NodeSpec `json:"spec"`
+type NodeTemplate struct {
+	// number of validator
+	Number int `json:"number"`
+
+	// Resources is node compute and storage resources
+	shared.Resources `json:"resources"`
+
+	// Logging verbosity: 0=silent, 1=error, 2=warn, 3=info, 4=debug, 5=detail (default: 3)
+	Verbosity uint `json:"verbosity,omitempty"`
 }
 
 // ClusterStatus defines the observed state of Cluster
 type ClusterStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
 }
 
 //+kubebuilder:object:root=true

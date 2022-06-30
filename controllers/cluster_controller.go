@@ -99,6 +99,13 @@ func (r *ClusterReconciler) reconcileNode(ctx reconcileClusterRequestContext) (e
 		return
 	}
 
+	for _, v := range validators {
+		ctx.cluster.Spec.Genesis.Accounts = append(ctx.cluster.Spec.Genesis.Accounts, ethereumv1alpha1.Account{
+			Address: v,
+			Balance: "1000000000000000000000000000",
+		})
+	}
+
 	for i := 0; i < ctx.cluster.Spec.Validator.Number; i++ {
 
 		node := &ethereumv1alpha1.Node{
@@ -120,18 +127,23 @@ func (r *ClusterReconciler) reconcileNode(ctx reconcileClusterRequestContext) (e
 			return err
 		}
 
+		clusterSpec := ctx.cluster.DeepCopy().Spec
+
 		_, err = ctrl.CreateOrUpdate(ctx, r.Client, node, func() (err error) {
 			if err := ctrl.SetControllerReference(ctx.cluster, node, r.Scheme); err != nil {
 				return err
 			}
 			node.ObjectMeta.Labels = ctx.cluster.GetLabels()
 
-			node.Spec = ctx.cluster.Spec.Validator.Spec
+			node.Spec.Image = clusterSpec.Image
 
-			node.Default()
+			node.Spec.Genesis = clusterSpec.Genesis
+
+			node.Spec.Resources = clusterSpec.Validator.Resources
+
+			node.Spec.Miner = true
 
 			// fmt.Printf("%+v\n", node)
-			node.Spec.Genesis = ctx.cluster.DeepCopy().Spec.Genesis
 
 			node.Spec.StaticNodes = staticNodes
 
@@ -143,41 +155,6 @@ func (r *ClusterReconciler) reconcileNode(ctx reconcileClusterRequestContext) (e
 
 			return nil
 		})
-	}
-
-	for i := 0; i < ctx.cluster.Spec.Member.Number; i++ {
-
-		node := &ethereumv1alpha1.Node{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      fmt.Sprintf(NameFormatValidator, ctx.cluster.Name, i),
-				Namespace: ctx.cluster.Namespace,
-			},
-		}
-
-		address, err := r.getNodeAddress(ctx, ethereumv1alpha1.NodeTypeValidator, i)
-		if err != nil {
-			return err
-		}
-
-		_, err = ctrl.CreateOrUpdate(ctx, r.Client, node, func() (err error) {
-			if err := ctrl.SetControllerReference(ctx.cluster, node, r.Scheme); err != nil {
-				return err
-			}
-			node.ObjectMeta.Labels = ctx.cluster.GetLabels()
-
-			node.Spec = ctx.cluster.Spec.Validator.Spec
-
-			node.Default()
-
-			node.Spec.StaticNodes = staticNodes
-
-			node.Spec.Genesis.QBFT.Validators = validators
-
-			node.Spec.Coinbase = ethereumv1alpha1.EthereumAddress(address)
-
-			return nil
-		})
-
 	}
 
 	return nil

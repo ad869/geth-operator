@@ -162,29 +162,9 @@ spec:
                         - chainId
                         - networkId
                         type: object
-                      graphqlPort:
-                        description: GraphQLPort is the GraphQL server listening port
-                        type: integer
                       image:
                         description: Image is Ethereum node client image
                         type: string
-                      import:
-                        description: import is account to import
-                        properties:
-                          passwordSecretName:
-                            description: PasswordSecretName is the secret holding
-                              password used to encrypt account private key
-                            type: string
-                          privateKeySecretName:
-                            description: PrivateKeySecretName is the secret name holding
-                              account private key
-                            type: string
-                        required:
-                        - passwordSecretName
-                        - privateKeySecretName
-                        type: object
-                      metricsPort:
-                        type: integer
                       miner:
                         description: Miner is whether node is mining/validating blocks
                           or no
@@ -193,9 +173,27 @@ spec:
                         description: NodePrivateKeySecretName is the secret name holding
                           node private key
                         type: string
-                      p2pPort:
-                        description: P2PPort is port used for peer to peer communication
-                        type: integer
+                      ports:
+                        properties:
+                          graphqlPort:
+                            description: GraphQLPort is the GraphQL server listening
+                              port
+                            type: integer
+                          metricsPort:
+                            type: integer
+                          p2pPort:
+                            description: P2PPort is port used for peer to peer communication
+                            type: integer
+                          rlpxPort:
+                            type: integer
+                          rpcPort:
+                            description: RPCPort is HTTP-RPC server listening port
+                            type: integer
+                          wsPort:
+                            description: WSPort is the web socket server listening
+                              port
+                            type: integer
+                        type: object
                       resources:
                         description: Resources is node compute and storage resources
                         properties:
@@ -220,11 +218,6 @@ spec:
                             description: StorageClass is the volume storage class
                             type: string
                         type: object
-                      rlpxPort:
-                        type: integer
-                      rpcPort:
-                        description: RPCPort is HTTP-RPC server listening port
-                        type: integer
                       staticNodes:
                         description: StaticNodes is a set of ethereum nodes to maintain
                           connection to
@@ -235,9 +228,6 @@ spec:
                       verbosity:
                         description: 'Logging verbosity: 0=silent, 1=error, 2=warn,
                           3=info, 4=debug, 5=detail (default: 3)'
-                        type: integer
-                      wsPort:
-                        description: WSPort is the web socket server listening port
                         type: integer
                     type: object
                 required:
@@ -317,29 +307,9 @@ spec:
                         - chainId
                         - networkId
                         type: object
-                      graphqlPort:
-                        description: GraphQLPort is the GraphQL server listening port
-                        type: integer
                       image:
                         description: Image is Ethereum node client image
                         type: string
-                      import:
-                        description: import is account to import
-                        properties:
-                          passwordSecretName:
-                            description: PasswordSecretName is the secret holding
-                              password used to encrypt account private key
-                            type: string
-                          privateKeySecretName:
-                            description: PrivateKeySecretName is the secret name holding
-                              account private key
-                            type: string
-                        required:
-                        - passwordSecretName
-                        - privateKeySecretName
-                        type: object
-                      metricsPort:
-                        type: integer
                       miner:
                         description: Miner is whether node is mining/validating blocks
                           or no
@@ -348,9 +318,27 @@ spec:
                         description: NodePrivateKeySecretName is the secret name holding
                           node private key
                         type: string
-                      p2pPort:
-                        description: P2PPort is port used for peer to peer communication
-                        type: integer
+                      ports:
+                        properties:
+                          graphqlPort:
+                            description: GraphQLPort is the GraphQL server listening
+                              port
+                            type: integer
+                          metricsPort:
+                            type: integer
+                          p2pPort:
+                            description: P2PPort is port used for peer to peer communication
+                            type: integer
+                          rlpxPort:
+                            type: integer
+                          rpcPort:
+                            description: RPCPort is HTTP-RPC server listening port
+                            type: integer
+                          wsPort:
+                            description: WSPort is the web socket server listening
+                              port
+                            type: integer
+                        type: object
                       resources:
                         description: Resources is node compute and storage resources
                         properties:
@@ -375,11 +363,6 @@ spec:
                             description: StorageClass is the volume storage class
                             type: string
                         type: object
-                      rlpxPort:
-                        type: integer
-                      rpcPort:
-                        description: RPCPort is HTTP-RPC server listening port
-                        type: integer
                       staticNodes:
                         description: StaticNodes is a set of ethereum nodes to maintain
                           connection to
@@ -390,9 +373,6 @@ spec:
                       verbosity:
                         description: 'Logging verbosity: 0=silent, 1=error, 2=warn,
                           3=info, 4=debug, 5=detail (default: 3)'
-                        type: integer
-                      wsPort:
-                        description: WSPort is the web socket server listening port
                         type: integer
                     type: object
                 required:

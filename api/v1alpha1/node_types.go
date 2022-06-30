@@ -48,15 +48,16 @@ type NodeSpec struct {
 	// Miner is whether node is mining/validating blocks or no
 	Miner bool `json:"miner,omitempty"`
 
-	// import is account to import
-	Import *ImportedAccount `json:"import,omitempty"`
-
 	// Coinbase is the account to which mining rewards are paid
 	Coinbase EthereumAddress `json:"coinbase,omitempty"`
 
 	// Logging verbosity: 0=silent, 1=error, 2=warn, 3=info, 4=debug, 5=detail (default: 3)
 	Verbosity uint `json:"verbosity,omitempty"`
 
+	Ports `json:"ports,omitempty"`
+}
+
+type Ports struct {
 	// P2PPort is port used for peer to peer communication
 	P2PPort uint `json:"p2pPort,omitempty"`
 
@@ -74,18 +75,8 @@ type NodeSpec struct {
 	MetricsPort uint `json:"metricsPort,omitempty"`
 }
 
-// ImportedAccount is account derived from private key
-type ImportedAccount struct {
-	// PrivateKeySecretName is the secret name holding account private key
-	PrivateKeySecretName string `json:"privateKeySecretName"`
-	// PasswordSecretName is the secret holding password used to encrypt account private key
-	PasswordSecretName string `json:"passwordSecretName"`
-}
-
 // NodeStatus defines the observed state of Node
 type NodeStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
 }
 
 //+kubebuilder:object:root=true

@@ -29,5 +29,4 @@ func UpdateLabels(cr CustomResource, client string) {
 	}
 
 	cr.SetLabels(labels)
-
 }

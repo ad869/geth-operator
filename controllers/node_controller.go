@@ -189,27 +189,25 @@ func (r *NodeReconciler) createNodeVolumeMounts(ctx reconcileNodeRequestContext)
 
 	var client ethereum.GoQuorum
 
-	if ctx.node.Spec.NodePrivateKeySecretName != "" || ctx.node.Spec.Import != nil {
-		nodekeyMount := corev1.VolumeMount{
-			Name:      "secrets",
-			MountPath: client.PathSecrets(),
-			ReadOnly:  true,
-		}
-		volumeMounts = append(volumeMounts, nodekeyMount)
-	}
+	// secrets mount
+	volumeMounts = append(volumeMounts, corev1.VolumeMount{
+		Name:      "secrets",
+		MountPath: client.PathSecrets(),
+		ReadOnly:  true,
+	})
 
-	genesisMount := corev1.VolumeMount{
+	// config mount
+	volumeMounts = append(volumeMounts, corev1.VolumeMount{
 		Name:      "config",
 		MountPath: client.PathConfig(),
 		ReadOnly:  true,
-	}
-	volumeMounts = append(volumeMounts, genesisMount)
+	})
 
-	dataMount := corev1.VolumeMount{
+	// data mount
+	volumeMounts = append(volumeMounts, corev1.VolumeMount{
 		Name:      "data",
 		MountPath: client.PathData(),
-	}
-	volumeMounts = append(volumeMounts, dataMount)
+	})
 
 	return volumeMounts
 }
@@ -219,57 +217,28 @@ func (r *NodeReconciler) createNodeVolumes(ctx reconcileNodeRequestContext) []co
 	projections := []corev1.VolumeProjection{}
 
 	// nodekey (node private key) projection
-	if ctx.node.Spec.NodePrivateKeySecretName != "" {
-		nodekeyProjection := corev1.VolumeProjection{
-			Secret: &corev1.SecretProjection{
-				LocalObjectReference: corev1.LocalObjectReference{
-					Name: ctx.node.Spec.NodePrivateKeySecretName,
+	nodekeyProjection := corev1.VolumeProjection{
+		Secret: &corev1.SecretProjection{
+			LocalObjectReference: corev1.LocalObjectReference{
+				Name: ctx.node.Spec.NodePrivateKeySecretName,
+			},
+			Items: []corev1.KeyToPath{
+				{
+					Key:  "key",
+					Path: "nodekey",
 				},
-				Items: []corev1.KeyToPath{
-					{
-						Key:  "key",
-						Path: "nodekey",
-					},
+				{
+					Key:  "key",
+					Path: "account.key",
+				},
+				{
+					Key:  "password",
+					Path: "account.password",
 				},
 			},
-		}
-		projections = append(projections, nodekeyProjection)
+		},
 	}
-
-	// importing ethereum account
-	if ctx.node.Spec.Import != nil {
-		// account private key projection
-		privateKeyProjection := corev1.VolumeProjection{
-			Secret: &corev1.SecretProjection{
-				LocalObjectReference: corev1.LocalObjectReference{
-					Name: ctx.node.Spec.Import.PrivateKeySecretName,
-				},
-				Items: []corev1.KeyToPath{
-					{
-						Key:  "key",
-						Path: "account.key",
-					},
-				},
-			},
-		}
-		projections = append(projections, privateKeyProjection)
-
-		// account password projection
-		passwordProjection := corev1.VolumeProjection{
-			Secret: &corev1.SecretProjection{
-				LocalObjectReference: corev1.LocalObjectReference{
-					Name: ctx.node.Spec.Import.PasswordSecretName,
-				},
-				Items: []corev1.KeyToPath{
-					{
-						Key:  "password",
-						Path: "account.password",
-					},
-				},
-			},
-		}
-		projections = append(projections, passwordProjection)
-	}
+	projections = append(projections, nodekeyProjection)
 
 	if len(projections) != 0 {
 		secretsVolume := corev1.Volume{

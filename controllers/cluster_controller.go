@@ -139,9 +139,7 @@ func (r *ClusterReconciler) reconcileNode(ctx reconcileClusterRequestContext) (e
 
 			node.Spec.Coinbase = ethereumv1alpha1.EthereumAddress(address)
 
-			node.Spec.Import = &ethereumv1alpha1.ImportedAccount{}
-			node.Spec.Import.PasswordSecretName = fmt.Sprintf(NameFormatValidator, ctx.cluster.Name, i)
-			node.Spec.Import.PrivateKeySecretName = fmt.Sprintf(NameFormatValidator, ctx.cluster.Name, i)
+			node.Spec.NodePrivateKeySecretName = fmt.Sprintf(NameFormatValidator, ctx.cluster.Name, i)
 
 			return nil
 		})

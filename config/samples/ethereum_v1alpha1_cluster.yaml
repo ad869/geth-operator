@@ -22,3 +22,5 @@ spec:
       memoryLimit: 0.5Gi
       storage: 0.4Gi
       storageClass: standard
+  ports:
+    p2pPort: 30303

@@ -18,8 +18,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
-	"strconv"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,7 +28,7 @@ import (
 
 	"github.com/ad869/geth-operator/api/shared"
 	ethereumv1alpha1 "github.com/ad869/geth-operator/api/v1alpha1"
-	"github.com/ad869/geth-operator/internal/crypto"
+	"github.com/ad869/geth-operator/internal/ethereum"
 	"github.com/go-logr/logr"
 )
 
@@ -50,6 +48,11 @@ type reconcileClusterRequestContext struct {
 //+kubebuilder:rbac:groups=ethereum.applying.cool,resources=clusters,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=ethereum.applying.cool,resources=clusters/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=ethereum.applying.cool,resources=clusters/finalizers,verbs=update
+
+//+kubebuilder:rbac:groups=ethereum.applying.cool,resources=nodes,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=ethereum.applying.cool,resources=nodes/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=ethereum.applying.cool,resources=nodes/finalizers,verbs=update
+//+kubebuilder:rbac:groups=core,resources=secrets,verbs=watch;get;create;update;list;delete
 
 func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ctx := reconcileClusterRequestContext{
@@ -76,25 +79,39 @@ func (r *ClusterReconciler) reconcileCluster(ctx reconcileClusterRequestContext)
 		return r.addFinalizerAndRequeue(ctx)
 	}
 
-	if err := r.reconcileSecret(ctx); err != nil {
+	var (
+		nodes       = []ethereum.GroupNode{}
+		clusterSpec = ctx.cluster.Spec
+		cluster     = ctx.cluster.DeepCopy()
+	)
+
+	for i := 0; i < clusterSpec.Validator.Number; i++ {
+		nodes = append(nodes, ethereum.NewGroupNode(cluster, ethereum.NodeRoleValidator, i))
+	}
+
+	for i := 0; i < clusterSpec.Member.Number; i++ {
+		nodes = append(nodes, ethereum.NewGroupNode(cluster, ethereum.NodeRoleMember, i))
+	}
+
+	if err := r.reconcileSecret(ctx, nodes); err != nil {
 		return RequeueIfError(err)
 	}
 
-	if err := r.reconcileNode(ctx); err != nil {
+	if err := r.reconcileNode(ctx, nodes); err != nil {
 		return RequeueIfError(err)
 	}
 
 	return ctrl.Result{}, nil
 }
 
-func (r *ClusterReconciler) reconcileNode(ctx reconcileClusterRequestContext) (err error) {
+func (r *ClusterReconciler) reconcileNode(ctx reconcileClusterRequestContext, nodes []ethereum.GroupNode) (err error) {
 
-	staticNodes, err := r.staticNodes(ctx)
+	staticNodes, err := r.getStaticNodes(ctx, nodes)
 	if err != nil {
 		return
 	}
 
-	validators, err := r.getValidatorsAddress(ctx)
+	validators, err := r.getValidatorsAddress(ctx, nodes)
 	if err != nil {
 		return
 	}
@@ -106,123 +123,93 @@ func (r *ClusterReconciler) reconcileNode(ctx reconcileClusterRequestContext) (e
 		})
 	}
 
-	for i := 0; i < ctx.cluster.Spec.Validator.Number; i++ {
+	for _, node := range nodes {
 
-		node := &ethereumv1alpha1.Node{
+		ethNode := &ethereumv1alpha1.Node{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      fmt.Sprintf(NameFormatValidator, ctx.cluster.Name, i),
+				Name:      node.String(),
 				Namespace: ctx.cluster.Namespace,
 			},
-			Spec: ethereumv1alpha1.NodeSpec{
-				Genesis: &ethereumv1alpha1.Genesis{
-					QBFT: ethereumv1alpha1.QBFT{
-						Validators: []ethereumv1alpha1.EthereumAddress{},
-					},
-				},
-			},
-		}
-
-		address, err := r.getNodeAddress(ctx, ethereumv1alpha1.NodeTypeValidator, i)
-		if err != nil {
-			return err
 		}
 
 		clusterSpec := ctx.cluster.DeepCopy().Spec
 
-		_, err = ctrl.CreateOrUpdate(ctx, r.Client, node, func() (err error) {
-			if err := ctrl.SetControllerReference(ctx.cluster, node, r.Scheme); err != nil {
+		_, err = ctrl.CreateOrUpdate(ctx, r.Client, ethNode, func() (err error) {
+			if err := ctrl.SetControllerReference(ctx.cluster, ethNode, r.Scheme); err != nil {
 				return err
 			}
-			node.ObjectMeta.Labels = ctx.cluster.GetLabels()
+			ethNode.ObjectMeta.Labels = ctx.cluster.GetLabels()
 
-			node.Spec.Image = clusterSpec.Image
+			ethNode.Spec.Image = clusterSpec.Image
 
-			node.Spec.Genesis = clusterSpec.Genesis
+			// setting genesis
+			ethNode.Spec.Genesis = clusterSpec.Genesis
+			ethNode.Spec.Genesis.QBFT.Validators = validators
 
-			node.Spec.Resources = clusterSpec.Validator.Resources
+			if node.IsValidator() {
+				ethNode.Spec.Resources = clusterSpec.Validator.Resources
+				ethNode.Spec.Miner = true
+			} else {
+				ethNode.Spec.Resources = clusterSpec.Member.Resources
+				ethNode.Spec.Miner = false
+			}
 
-			node.Spec.Miner = true
+			ethNode.Spec.StaticNodes = staticNodes
 
-			// fmt.Printf("%+v\n", node)
+			if ethNode.Spec.Coinbase, err = node.Address(); err != nil {
+				return
+			}
 
-			node.Spec.StaticNodes = staticNodes
+			ethNode.Spec.NodePrivateKeySecretName = node.String()
 
-			node.Spec.Genesis.QBFT.Validators = validators
-
-			node.Spec.Coinbase = ethereumv1alpha1.EthereumAddress(address)
-
-			node.Spec.NodePrivateKeySecretName = fmt.Sprintf(NameFormatValidator, ctx.cluster.Name, i)
+			// fmt.Printf("%+v\n", ethNode)
 
 			return nil
 		})
+
 	}
 
 	return nil
 }
 
-func (r *ClusterReconciler) getValidatorsAddress(ctx reconcileClusterRequestContext) (addresses []ethereumv1alpha1.EthereumAddress, err error) {
+func (r *ClusterReconciler) getValidatorsAddress(ctx reconcileClusterRequestContext, nodes []ethereum.GroupNode) (addresses []ethereumv1alpha1.EthereumAddress, err error) {
 
-	bip44 := crypto.NewBIP44(ctx.cluster.Spec.Mnemonic)
+	for _, node := range nodes {
 
-	for i := 0; i < ctx.cluster.Spec.Validator.Number; i++ {
+		if node.IsValidator() {
+			var address ethereumv1alpha1.EthereumAddress
 
-		address, err := bip44.DeriveAddress(r.getNodeAccountIndex(ctx, ethereumv1alpha1.NodeTypeValidator, i))
+			if address, err = node.Address(); err != nil {
+				return
+			}
+			addresses = append(addresses, address)
+		}
+	}
+
+	return
+}
+
+func (r *ClusterReconciler) getStaticNodes(ctx reconcileClusterRequestContext, nodes []ethereum.GroupNode) (enodeURLs []ethereumv1alpha1.Enode, err error) {
+
+	for _, node := range nodes {
+		var url ethereumv1alpha1.Enode
+		url, err = node.EnodeURL()
 		if err != nil {
-			return nil, err
+			return
 		}
-		addresses = append(addresses, ethereumv1alpha1.EthereumAddress(address))
+
+		enodeURLs = append(enodeURLs, url)
 	}
 
 	return
 }
 
-func (r *ClusterReconciler) staticNodes(ctx reconcileClusterRequestContext) (enodeURLs []ethereumv1alpha1.Enode, err error) {
+func (r *ClusterReconciler) reconcileSecret(ctx reconcileClusterRequestContext, nodes []ethereum.GroupNode) (err error) {
 
-	bip44 := crypto.NewBIP44(ctx.cluster.Spec.Mnemonic)
-
-	for i := 0; i < ctx.cluster.Spec.Validator.Number; i++ {
-
-		var publicKey string
-		if publicKey, err = bip44.DerivePublicKey(r.getNodeAccountIndex(ctx, ethereumv1alpha1.NodeTypeValidator, i)); err != nil {
-			return
-		}
-
-		enodeURLs = append(enodeURLs,
-			ethereumv1alpha1.Enode(fmt.Sprintf("enode://%s@%s.%s.svc.cluster.local:%d?discport=0",
-				publicKey,
-				r.getNodeName(ctx, ethereumv1alpha1.NodeTypeValidator, i),
-				ctx.cluster.Namespace,
-				30303,
-			)))
-	}
-
-	for i := 0; i < ctx.cluster.Spec.Member.Number; i++ {
-
-		var publicKey string
-		if publicKey, err = bip44.DerivePublicKey(r.getNodeAccountIndex(ctx, ethereumv1alpha1.NodeTypeMember, i)); err != nil {
-			return
-		}
-
-		enodeURLs = append(enodeURLs,
-			ethereumv1alpha1.Enode(fmt.Sprintf("enode://%s@%s.%s.svc.cluster.local:%d",
-				publicKey,
-				r.getNodeName(ctx, ethereumv1alpha1.NodeTypeMember, i),
-				ctx.cluster.Namespace,
-				30303,
-			)))
-	}
-
-	return
-}
-
-func (r *ClusterReconciler) reconcileSecret(ctx reconcileClusterRequestContext) (err error) {
-
-	// reconcile secrets of validators
-	for i := 0; i < ctx.cluster.Spec.Validator.Number; i++ {
-
+	for _, node := range nodes {
 		secret := &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      fmt.Sprintf(NameFormatValidator, ctx.cluster.Name, i),
+				Name:      node.String(),
 				Namespace: ctx.cluster.Namespace,
 			},
 		}
@@ -233,15 +220,8 @@ func (r *ClusterReconciler) reconcileSecret(ctx reconcileClusterRequestContext) 
 			}
 			secret.ObjectMeta.Labels = ctx.cluster.GetLabels()
 
-			var (
-				accountIndex int
-				privKey      string
-			)
-			bip44 := crypto.NewBIP44(ctx.cluster.Spec.Mnemonic)
-			if accountIndex, err = strconv.Atoi(fmt.Sprintf(AccountIndexPrefixValidator, i)); err != nil {
-				return
-			}
-			if privKey, err = bip44.DerivePrivateKey(accountIndex); err != nil {
+			privKey, err := node.PrivateKey()
+			if err != nil {
 				return
 			}
 
@@ -255,43 +235,10 @@ func (r *ClusterReconciler) reconcileSecret(ctx reconcileClusterRequestContext) 
 		if err != nil {
 			return err
 		}
+
 	}
 
 	return nil
-}
-
-func (r *ClusterReconciler) getNodeAddress(ctx reconcileClusterRequestContext, nodeType ethereumv1alpha1.NodeType, index int) (address string, err error) {
-	var accountIndex int
-	bip44 := crypto.NewBIP44(ctx.cluster.Spec.Mnemonic)
-	if accountIndex, err = strconv.Atoi(fmt.Sprintf(AccountIndexPrefixValidator, index)); err != nil {
-		return
-	}
-	if address, err = bip44.DeriveAddress(accountIndex); err != nil {
-		return
-	}
-	return
-}
-
-func (r *ClusterReconciler) getNodeName(ctx reconcileClusterRequestContext, nodeType ethereumv1alpha1.NodeType, index int) string {
-	if nodeType == ethereumv1alpha1.NodeTypeValidator {
-		return fmt.Sprintf(NameFormatValidator, ctx.cluster.Name, index)
-	}
-	return fmt.Sprintf(NameFormatMember, ctx.cluster.Name, index)
-}
-
-func (r *ClusterReconciler) getNodeAccountIndex(ctx reconcileClusterRequestContext, nodeType ethereumv1alpha1.NodeType, index int) int {
-	var indexFmt string
-
-	if nodeType == ethereumv1alpha1.NodeTypeValidator {
-
-		indexFmt = AccountIndexPrefixValidator
-	} else {
-		indexFmt = AccountIndexPrefixMember
-	}
-
-	accountIndex, _ := strconv.Atoi(fmt.Sprintf(indexFmt, index))
-
-	return accountIndex
 }
 
 // Add finalizer to prevent delete unexpected.

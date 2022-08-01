@@ -118,6 +118,10 @@ func (g *GoQuorum) Args() (args []string) {
 	args = append(args, "--http.vhosts", "*")
 	args = append(args, "--http.api", "admin,eth,debug,miner,net,txpool,personal,web3,istanbul")
 
+	// for blockscout
+	// https://docs.blockscout.com/for-developers/information-and-settings/client-settings-parity-geth-ganache#geth-client
+	args = append(args, "--gcmode", "archive")
+
 	if g.node.Spec.Miner {
 		args = append(args, "--mine")
 		args = append(args, "--miner.threads", "1")

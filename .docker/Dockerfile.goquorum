@@ -1,7 +1,7 @@
 # Build Geth in a stock Go builder container
 FROM golang:1.16-alpine as builder
 
-RUN git clone https://github.com/ConsenSys/quorum.git && git checkout tags/v22.7.0 -b build-branch
+RUN git clone https://github.com/ConsenSys/quorum.git && cd quorum && git checkout tags/v22.7.0 -b build-branch
 RUN apk add --no-cache make gcc musl-dev linux-headers git
 
 ADD . /go-ethereum

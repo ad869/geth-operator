@@ -28,18 +28,12 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: TEST
-        id: tmp-test
-        run: |
-          ls -al
-          cat ./docker/Dockerfile.goquorum
-
       - name: Docker build and push
         id: docker_build
         uses: docker/build-push-action@v3
         with:
           context: .
-          file: ./docker/Dockerfile.goquorum
+          file: .docker/Dockerfile.goquorum
           platforms: linux/arm64,linux/amd64
           tags: dockerxucheng/goquorum:${{ github.event.inputs.commitRef }}
           push: true

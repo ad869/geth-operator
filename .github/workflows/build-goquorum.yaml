@@ -1,4 +1,4 @@
-name: Build blockscout docker image
+name: Build Goquorum
 
 on:
   workflow_dispatch:

@@ -5,7 +5,7 @@ on:
     inputs:
       commitRef:
         description: The branch, tag or commit hash to checkout
-        default: main
+        default: v22.7.0
         required: true
 
 jobs:
@@ -13,8 +13,8 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     steps:
-      - name: Check out
-        uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v3
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
@@ -27,6 +27,11 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: TEST
+        id: tmp-test
+        run: |
+          cat ./docker/Dockerfile.goquorum
 
       - name: Docker build and push
         id: docker_build

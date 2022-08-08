@@ -31,6 +31,7 @@ jobs:
       - name: TEST
         id: tmp-test
         run: |
+          ls
           cat ./docker/Dockerfile.goquorum
 
       - name: Docker build and push

@@ -20,7 +20,7 @@ spec:
       cpuLimit: "0.5"
       memory: 0.2Gi
       memoryLimit: 0.5Gi
-      storage: 0.4Gi
+      storage: 0.5Gi
       storageClass: standard
   ports:
     p2pPort: 30303

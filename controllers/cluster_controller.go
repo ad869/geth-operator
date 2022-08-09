@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -98,7 +99,7 @@ func (r *ClusterReconciler) reconcileCluster(ctx reconcileClusterRequestContext)
 	}
 
 	if err := r.reconcileNode(ctx, nodes); err != nil {
-		return RequeueIfError(err)
+		return RequeueAfterInterval(time.Second, err)
 	}
 
 	return ctrl.Result{}, nil
@@ -161,9 +162,6 @@ func (r *ClusterReconciler) reconcileNode(ctx reconcileClusterRequestContext, no
 			}
 
 			ethNode.Spec.NodePrivateKeySecretName = node.String()
-
-			// fmt.Printf("%+v\n", ethNode)
-
 			return nil
 		})
 	}
@@ -174,10 +172,8 @@ func (r *ClusterReconciler) reconcileNode(ctx reconcileClusterRequestContext, no
 func (r *ClusterReconciler) getValidatorsAddress(ctx reconcileClusterRequestContext, nodes []ethereum.GroupNode) (addresses []ethereumv1alpha1.EthereumAddress, err error) {
 
 	for _, node := range nodes {
-
 		if node.IsValidator() {
 			var address ethereumv1alpha1.EthereumAddress
-
 			if address, err = node.Address(); err != nil {
 				return
 			}
@@ -196,15 +192,13 @@ func (r *ClusterReconciler) getStaticNodes(ctx reconcileClusterRequestContext, n
 		if err != nil {
 			return
 		}
-
 		enodeURLs = append(enodeURLs, url)
 	}
-
 	return
 }
 
 func (r *ClusterReconciler) reconcileSecret(ctx reconcileClusterRequestContext, nodes []ethereum.GroupNode) (err error) {
-
+	ctx.log.WithName("reconcileSecret").Info("create secret for ethereum cluster")
 	for _, node := range nodes {
 		secret := &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
@@ -212,54 +206,52 @@ func (r *ClusterReconciler) reconcileSecret(ctx reconcileClusterRequestContext, 
 				Namespace: ctx.cluster.Namespace,
 			},
 		}
-
 		_, err = ctrl.CreateOrUpdate(ctx, r.Client, secret, func() (err error) {
 			if err := ctrl.SetControllerReference(ctx.cluster, secret, r.Scheme); err != nil {
 				return err
 			}
 			secret.ObjectMeta.Labels = ctx.cluster.GetLabels()
-
 			privKey, err := node.PrivateKey()
 			if err != nil {
 				return
 			}
-
 			secret.Data = map[string][]byte{
 				"key":      []byte(privKey),
 				"password": []byte(""),
 			}
-
 			return nil
 		})
 		if err != nil {
 			return err
 		}
-
 	}
-
 	return nil
 }
 
 // Add finalizer to prevent delete unexpected.
 func (r *ClusterReconciler) addFinalizerAndRequeue(ctx reconcileClusterRequestContext) (ctrl.Result, error) {
+	log := ctx.log.WithName("addFinalizerAndRequeue")
+
 	ctx.cluster.ObjectMeta.Finalizers = append(ctx.cluster.ObjectMeta.Finalizers, string(FinalizerNode))
-	ctx.log.Info("Add finalizer and Requeue")
 	if err := r.Update(ctx, ctx.cluster); err != nil {
-		ctx.log.Error(err, "Failed to add finalizer")
+		log.Error(err, "Adding finalizer was failed.")
 		return RequeueIfError(err)
 	}
+	log.Info("Add finalizer and Requeue")
 	return RequeueImmediately()
 }
 
 // Remove the finalizer and update resource.
 func (r *ClusterReconciler) removeFinalizerAndUpdate(ctx reconcileClusterRequestContext) (ctrl.Result, error) {
 	log := ctx.log.WithName("removeFinalizerAndUpdate")
+
 	ctx.cluster.ObjectMeta.Finalizers = RemoveString(ctx.cluster.ObjectMeta.Finalizers, string(FinalizerNode))
 	err := r.Update(ctx, ctx.cluster)
 	if err != nil {
-		log.Info("Failed to remove finalizer", "error", err)
+		log.Info("Removing finalizer was failed.", "error", err)
+		return RequeueIfError(err)
 	}
-	log.Info("Finalizer has been removed from the job")
+	log.Info("Finalizer has been removed from the resource.")
 	return RequeueIfError(err)
 }
 
@@ -267,5 +259,6 @@ func (r *ClusterReconciler) removeFinalizerAndUpdate(ctx reconcileClusterRequest
 func (r *ClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&ethereumv1alpha1.Cluster{}).
+		Owns(&ethereumv1alpha1.Node{}).
 		Complete(r)
 }

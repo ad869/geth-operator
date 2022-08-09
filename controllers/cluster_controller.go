@@ -134,7 +134,7 @@ func (r *ClusterReconciler) reconcileNode(ctx reconcileClusterRequestContext, no
 
 		clusterSpec := ctx.cluster.DeepCopy().Spec
 
-		_, err = ctrl.CreateOrUpdate(ctx, r.Client, ethNode, func() (err error) {
+		ctrl.CreateOrUpdate(ctx, r.Client, ethNode, func() (err error) {
 			if err := ctrl.SetControllerReference(ctx.cluster, ethNode, r.Scheme); err != nil {
 				return err
 			}
@@ -166,7 +166,6 @@ func (r *ClusterReconciler) reconcileNode(ctx reconcileClusterRequestContext, no
 
 			return nil
 		})
-
 	}
 
 	return nil

@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -76,6 +77,7 @@ func (r *NodeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	if err := r.Get(ctx, req.NamespacedName, _ctx.node); err != nil {
 		return RequeueIfError(client.IgnoreNotFound(err))
 	}
+	_ctx.log.Info(fmt.Sprintf("start reconcile node %s", _ctx.node.Name))
 
 	_ctx.node.Default()
 
@@ -94,8 +96,9 @@ func (r *NodeReconciler) reconcileNode(ctx reconcileNodeRequestContext) (ctrl.Re
 		return r.addFinalizerAndRequeue(ctx)
 	}
 
+	// Because the pvc needs to be managed by the csi-controller, so adding a delay
 	if err := r.reconcilePVC(ctx); err != nil {
-		return RequeueIfError(err)
+		return RequeueAfterInterval(5*time.Second, err)
 	}
 
 	if err := r.reconcileConfigMap(ctx); err != nil {
@@ -280,6 +283,7 @@ func (r *NodeReconciler) createNodeVolumes(ctx reconcileNodeRequestContext) []co
 }
 
 func (r *NodeReconciler) reconcileService(ctx reconcileNodeRequestContext) (ip string, err error) {
+	log := ctx.log.WithName("reconcileConfigMap")
 
 	svc := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
@@ -291,6 +295,7 @@ func (r *NodeReconciler) reconcileService(ctx reconcileNodeRequestContext) (ip s
 	_, err = ctrl.CreateOrUpdate(ctx, r.Client, svc, func() error {
 
 		if err := ctrl.SetControllerReference(ctx.node, svc, r.Scheme); err != nil {
+			log.Error(err, "Unable to set controller reference on service")
 			return err
 		}
 
@@ -351,6 +356,7 @@ func (r *NodeReconciler) reconcileService(ctx reconcileNodeRequestContext) (ip s
 }
 
 func (r *NodeReconciler) reconcileConfigMap(ctx reconcileNodeRequestContext) error {
+	log := ctx.log.WithName("reconcileConfigMap")
 
 	configmap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
@@ -362,7 +368,7 @@ func (r *NodeReconciler) reconcileConfigMap(ctx reconcileNodeRequestContext) err
 
 	_, err := ctrl.CreateOrUpdate(ctx, r.Client, configmap, func() error {
 		if err := ctrl.SetControllerReference(ctx.node, configmap, r.Scheme); err != nil {
-			ctx.log.Error(err, "Unable to set controller reference on configmap")
+			log.Error(err, "Unable to set controller reference on configmap")
 			return err
 		}
 
@@ -372,6 +378,7 @@ func (r *NodeReconciler) reconcileConfigMap(ctx reconcileNodeRequestContext) err
 		// generate genesis.json
 		content, err := client.Genesis()
 		if err != nil {
+			log.Error(err, "Generate genesis file was failed.")
 			return err
 		}
 		configmap.Data["genesis.json"] = content
@@ -391,6 +398,9 @@ func (r *NodeReconciler) reconcileConfigMap(ctx reconcileNodeRequestContext) err
 }
 
 func (r *NodeReconciler) reconcilePVC(ctx reconcileNodeRequestContext) error {
+
+	ctx.log.WithName("reconcile pvc").Info(fmt.Sprintf("expect %s", ctx.node.Spec.Resources.Storage))
+
 	pvc := &corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      ctx.node.Name,
@@ -429,24 +439,28 @@ func (r *NodeReconciler) reconcilePVC(ctx reconcileNodeRequestContext) error {
 
 // Add finalizer to prevent delete unexpected.
 func (r *NodeReconciler) addFinalizerAndRequeue(ctx reconcileNodeRequestContext) (ctrl.Result, error) {
+	log := ctx.log.WithName("addFinalizerAndRequeue")
+
 	ctx.node.ObjectMeta.Finalizers = append(ctx.node.ObjectMeta.Finalizers, string(FinalizerNode))
-	ctx.log.Info("Add finalizer and Requeue")
 	if err := r.Update(ctx, ctx.node); err != nil {
-		ctx.log.Error(err, "Failed to add finalizer")
+		log.Error(err, "Adding finalizer was failed.")
 		return RequeueIfError(err)
 	}
+	log.Info("Add finalizer and Requeue.")
 	return RequeueImmediately()
 }
 
 // Remove the finalizer and update resource.
 func (r *NodeReconciler) removeFinalizerAndUpdate(ctx reconcileNodeRequestContext) (ctrl.Result, error) {
 	log := ctx.log.WithName("removeFinalizerAndUpdate")
+
 	ctx.node.ObjectMeta.Finalizers = RemoveString(ctx.node.ObjectMeta.Finalizers, string(FinalizerNode))
 	err := r.Update(ctx, ctx.node)
 	if err != nil {
-		log.Info("Failed to remove finalizer", "error", err)
+		log.Info("Removing finalizer was failed.", "error", err)
+		return RequeueIfError(err)
 	}
-	log.Info("Finalizer has been removed from the job")
+	log.Info("Finalizer has been removed from the rescource.")
 	return RequeueIfError(err)
 }
 

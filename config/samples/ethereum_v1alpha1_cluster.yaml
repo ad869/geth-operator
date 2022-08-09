@@ -4,7 +4,7 @@ metadata:
   name: apple
 spec:
   mnemonic: "tag volcano eight thank tide danger coast health above argue embrace heavy"
-  image: quorumengineering/quorum:22.4.2
+  image: dockerxucheng/goquorum:v22.7.0
   genesis:
     networkId: 1337
     chainId: 1337
@@ -20,7 +20,7 @@ spec:
       cpuLimit: "0.5"
       memory: 0.2Gi
       memoryLimit: 0.5Gi
-      storage: 0.5Gi
+      storage: 0.6Gi
       storageClass: standard
   ports:
     p2pPort: 30303

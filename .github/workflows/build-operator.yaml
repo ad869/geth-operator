@@ -1,4 +1,4 @@
-name: Build Goquorum
+name: Build Operator
 
 on:
   workflow_dispatch:
@@ -15,9 +15,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-        with:
-          repository: https://github.com/ConsenSys/quorum.git
-          ref: ${{ github.event.inputs.commitRef }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
@@ -36,7 +33,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: .
-          # file: Dockerfile
+          file: .docker/Dockerfile.goquorum
           platforms: linux/arm64,linux/amd64
           tags: dockerxucheng/goquorum:${{ github.event.inputs.commitRef }}
           push: true

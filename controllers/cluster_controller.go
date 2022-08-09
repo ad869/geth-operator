@@ -64,7 +64,7 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return RequeueIfError(client.IgnoreNotFound(err))
 	}
 
-	shared.UpdateLabels(_ctx.cluster, "quorum")
+	shared.UpdateLabels(_ctx.cluster, "goquorum")
 
 	return r.reconcileCluster(_ctx)
 }

@@ -17,14 +17,14 @@ type CustomResource interface {
 func UpdateLabels(cr CustomResource, client string) {
 
 	gvk := cr.GroupVersionKind()
-	group := strings.Replace(gvk.Group, ".kotal.io", "", 1)
+	group := strings.Replace(gvk.Group, ".applying.cool", "", 1)
 	kind := strings.ToLower(gvk.Kind)
 
 	labels := map[string]string{
 		"app.kubernetes.io/name":       client,
 		"app.kubernetes.io/instance":   cr.GetName(),
 		"app.kubernetes.io/component":  fmt.Sprintf("%s-%s", group, kind),
-		"app.kubernetes.io/managed-by": "kotal",
+		"app.kubernetes.io/managed-by": "goquorum",
 		"app.kubernetes.io/created-by": fmt.Sprintf("%s-%s-controller", group, kind),
 	}
 

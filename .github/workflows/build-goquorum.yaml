@@ -16,7 +16,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          repository: https://github.com/ConsenSys/quorum.git
+          repository: ConsenSys/quorum
           ref: ${{ github.event.inputs.commitRef }}
 
       - name: Set up QEMU

@@ -86,6 +86,11 @@ func (r *ClusterReconciler) reconcileCluster(ctx reconcileClusterRequestContext)
 		cluster     = ctx.cluster.DeepCopy()
 	)
 
+	// reconcile validator logic
+	// If this is the first time to deploy the validators, then put all validaor's address to genesis configure file.
+	// But if the node has already been deployed, then need to use api to deploy new validators.
+	// https://consensys.net/docs/goquorum//en/latest/reference/api-methods/#istanbul_propose
+
 	for i := 0; i < clusterSpec.Validator.Number; i++ {
 		nodes = append(nodes, ethereum.NewGroupNode(cluster, ethereum.NodeRoleValidator, i))
 	}
@@ -150,9 +155,11 @@ func (r *ClusterReconciler) reconcileNode(ctx reconcileClusterRequestContext, no
 			if node.IsValidator() {
 				ethNode.Spec.Resources = clusterSpec.Validator.Resources
 				ethNode.Spec.Miner = true
+				ethNode.Spec.Verbosity = clusterSpec.Validator.Verbosity
 			} else {
 				ethNode.Spec.Resources = clusterSpec.Member.Resources
 				ethNode.Spec.Miner = false
+				ethNode.Spec.Verbosity = clusterSpec.Member.Verbosity
 			}
 
 			ethNode.Spec.StaticNodes = staticNodes

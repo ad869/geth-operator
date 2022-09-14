@@ -50,7 +50,9 @@ func (r *Node) Default() {
 
 	r.DefaultNodePorts()
 
-	r.Spec.Verbosity = 5
+	if r.Spec.Verbosity == 0 {
+		r.Spec.Verbosity = 5
+	}
 }
 
 func (r *Node) DefaultNodePorts() {

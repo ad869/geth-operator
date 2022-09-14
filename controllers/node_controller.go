@@ -133,16 +133,8 @@ func (r *NodeReconciler) reconcileStatefulSet(ctx reconcileNodeRequestContext) (
 		if err := ctrl.SetControllerReference(ctx.node, sts, r.Scheme); err != nil {
 			return err
 		}
-		labels := ctx.node.GetLabels()
 
-		sts.ObjectMeta.Labels = labels
-		if sts.Spec.Selector == nil {
-			sts.Spec.Selector = &metav1.LabelSelector{}
-		}
-		sts.Spec.ServiceName = ctx.node.Name
-		sts.Spec.Selector.MatchLabels = labels
-		sts.Spec.Template.ObjectMeta.Labels = labels
-		sts.Spec.Template.Spec = corev1.PodSpec{
+		template := corev1.PodSpec{
 			Volumes: r.createNodeVolumes(ctx),
 			InitContainers: []corev1.Container{
 				{
@@ -181,6 +173,25 @@ func (r *NodeReconciler) reconcileStatefulSet(ctx reconcileNodeRequestContext) (
 				VolumeMounts: volumeMounts,
 			}},
 		}
+
+		// spec is imutable, except 'replicas', 'template', 'updateStrategy' and 'minReadySeconds'
+		if !sts.CreationTimestamp.IsZero() {
+			sts.Spec.Template.Spec = template
+			return nil
+		}
+
+		// set lables
+		labels := ctx.node.GetLabels()
+		sts.ObjectMeta.Labels = labels
+		sts.Spec.Selector = &metav1.LabelSelector{}
+		sts.Spec.Selector.MatchLabels = labels
+		sts.Spec.Template.ObjectMeta.Labels = labels
+
+		// set service
+		sts.Spec.ServiceName = ctx.node.Name
+
+		//set template
+		sts.Spec.Template.Spec = template
 		return nil
 	})
 

@@ -304,17 +304,12 @@ func (r *NodeReconciler) reconcileService(ctx reconcileNodeRequestContext) (ip s
 	}
 
 	_, err = ctrl.CreateOrUpdate(ctx, r.Client, svc, func() error {
-
 		if err := ctrl.SetControllerReference(ctx.node, svc, r.Scheme); err != nil {
 			log.Error(err, "Unable to set controller reference on service")
 			return err
 		}
 
-		labels := ctx.node.GetLabels()
-
-		svc.ObjectMeta.Labels = labels
-
-		svc.Spec.Ports = []corev1.ServicePort{
+		svcPorts := []corev1.ServicePort{
 			{
 				Name:       "discovery",
 				Port:       int32(ctx.node.Spec.P2PPort),
@@ -352,7 +347,19 @@ func (r *NodeReconciler) reconcileService(ctx reconcileNodeRequestContext) (ip s
 				Protocol:   corev1.ProtocolTCP,
 			},
 		}
+		// Do not change lables of service because of labels of sts can not be change.
+		if !svc.CreationTimestamp.IsZero() {
+			svc.Spec.Ports = svcPorts
+			return nil
+		}
+
+		// set lables
+		labels := ctx.node.GetLabels()
+		svc.ObjectMeta.Labels = labels
 		svc.Spec.Selector = labels
+
+		// set ports
+		svc.Spec.Ports = svcPorts
 
 		return nil
 	})

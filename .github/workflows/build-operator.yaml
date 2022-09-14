@@ -12,7 +12,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          ref: ${{ env.GITHUB_REF_NAME }}
+          ref: ${{ github.ref_name }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
@@ -32,5 +32,5 @@ jobs:
         with:
           context: .
           platforms: linux/arm64,linux/amd64
-          tags: dockerxucheng/geth-operator:${{ env.GITHUB_REF_NAME }}
+          tags: dockerxucheng/geth-operator:${{ github.ref_name }}
           push: true

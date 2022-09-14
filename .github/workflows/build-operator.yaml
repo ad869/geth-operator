@@ -1,12 +1,8 @@
 name: Build Operator
 
 on:
-  workflow_dispatch:
-    inputs:
-      commitRef:
-        description: The branch, tag or commit hash to checkout
-        default: main
-        required: true
+  release:
+    types: [published]
 
 jobs:
   build-docker-container:
@@ -16,8 +12,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          ref: ${{ github.event.inputs.commitRef }}
-        
+          ref: ${{ env.GITHUB_REF_NAME }}
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
 
@@ -36,5 +32,5 @@ jobs:
         with:
           context: .
           platforms: linux/arm64,linux/amd64
-          tags: dockerxucheng/geth-operator:${{ github.event.inputs.commitRef }}
+          tags: dockerxucheng/geth-operator:${{ env.GITHUB_REF_NAME }}
           push: true
